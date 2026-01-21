@@ -5,45 +5,61 @@ import { supabase } from "../lib/supabase";
 
 export default function Home() {
   const [query, setQuery] = useState("");
-  const [shops, setShops] = useState([]);
+  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     async function search() {
       if (!query.trim()) {
-        setShops([]);
+        setResults([]);
         return;
       }
 
       setLoading(true);
 
-      // 1) find products matching the query
-      const { data: products, error: prodErr } = await supabase
+      // Fetch products + related shop
+      const { data, error } = await supabase
         .from("products")
-        .select("shop_id")
+        .select(`
+          product_name,
+          shops (
+            id,
+            name,
+            area,
+            phone
+          )
+        `)
         .ilike("product_name", `%${query}%`);
 
-      if (prodErr || !products?.length) {
-        setShops([]);
+      if (error || !data) {
+        setResults([]);
         setLoading(false);
         return;
       }
 
-      // 2) unique shop IDs
-      const shopIds = [...new Set(products.map(p => p.shop_id))];
+      // Group products by shop
+      const grouped = {};
 
-      // 3) fetch shops
-      const { data: shopsData } = await supabase
-        .from("shops")
-        .select("*")
-        .in("id", shopIds);
+      data.forEach((item) => {
+        const shop = item.shops;
+        if (!shop) return;
 
-      setShops(shopsData || []);
+        if (!grouped[shop.id]) {
+          grouped[shop.id] = {
+            ...shop,
+            products: [],
+          };
+        }
+
+        grouped[shop.id].products.push(item.product_name);
+      });
+
+      setResults(Object.values(grouped));
       setLoading(false);
     }
 
-    const t = setTimeout(search, 300); // small debounce
-    return () => clearTimeout(t);
+    const delay = setTimeout(search, 300);
+    return () => clearTimeout(delay);
   }, [query]);
 
   return (
@@ -58,21 +74,25 @@ export default function Home() {
         style={{ width: "100%", padding: 12, fontSize: 16 }}
       />
 
-      {query && <h3 style={{ marginTop: 30 }}>Shops with “{query}”</h3>}
-
       {loading && <p>Searching…</p>}
 
-      {!loading && shops.length === 0 && query && (
+      {!loading && query && results.length === 0 && (
         <p>No shops found for “{query}”.</p>
       )}
 
       <ul>
-        {shops.map((shop) => (
-          <li key={shop.id}>
-            <b>{shop.name}</b> — {shop.area} — {shop.phone}
+        {results.map((shop) => (
+          <li key={shop.id} style={{ marginTop: 20 }}>
+            <strong>{shop.name}</strong> — {shop.area} — {shop.phone}
+            <ul>
+              {shop.products.map((p, i) => (
+                <li key={i}>{p}</li>
+              ))}
+            </ul>
           </li>
         ))}
       </ul>
     </main>
   );
 }
+
