@@ -74,24 +74,63 @@ export default function Home() {
         style={{ width: "100%", padding: 12, fontSize: 16 }}
       />
 
+      <div style={{ marginTop: 12 }}>
+  <strong>Popular searches:</strong>{" "}
+  {["iPhone", "Samsung", "AirPods", "Fast Charger"].map((item) => (
+    <button
+      key={item}
+      onClick={() => setQuery(item)}
+      style={{
+        marginLeft: 8,
+        background: "none",
+        border: "1px solid #444",
+        color: "#fff",
+        padding: "4px 8px",
+        cursor: "pointer",
+      }}
+    >
+      {item}
+    </button>
+  ))}
+</div>
+ 
+
       {loading && <p>Searching…</p>}
 
       {!loading && query && results.length === 0 && (
-        <p>No shops found for “{query}”.</p>
+         <p style={{ marginTop: 16, opacity: 0.8 }}>
+          No nearby shops sell “{query}” yet. Try another product.
+         </p>
+      )}
+
+        {!loading && query && results.length > 0 && (
+        <p style={{ marginTop: 16, opacity: 0.8 }}>
+        {results.length} shop{results.length > 1 ? "s" : ""} found for “{query}”
+        </p>
       )}
 
       <ul>
-        {results.map((shop) => (
-          <li key={shop.id} style={{ marginTop: 20 }}>
-            <strong>{shop.name}</strong> — {shop.area} — {shop.phone}
-            <ul>
-              {shop.products.map((p, i) => (
-                <li key={i}>{p}</li>
-              ))}
-            </ul>
-          </li>
+  {results.map((shop) => (
+    <li
+      key={shop.id}
+      style={{
+        marginTop: 20,
+        padding: 12,
+        border: "1px solid #333",
+        borderRadius: 6,
+      }}
+    >
+      <strong>{shop.name}</strong> — {shop.area} — {shop.phone}
+
+      <ul>
+        {shop.products.map((p, i) => (
+          <li key={i}>{p}</li>
         ))}
       </ul>
+    </li>
+  ))}
+</ul>
+
     </main>
   );
 }
