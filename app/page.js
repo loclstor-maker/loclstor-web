@@ -59,7 +59,6 @@ export default function Home() {
         return;
       }
 
-      // Group products by shop
       const grouped = {};
 
       data.forEach((item) => {
@@ -76,20 +75,15 @@ export default function Home() {
         grouped[shop.id].products.push(item.product_name);
       });
 
-      // Add distance + sort
-      const withDistance = Object.values(grouped).map((shop) => {
-        const distanceKm = getDistanceKm(
+      const withDistance = Object.values(grouped).map((shop) => ({
+        ...shop,
+        distanceKm: getDistanceKm(
           USER_LAT,
           USER_LNG,
           shop.lat,
           shop.lng
-        );
-
-        return {
-          ...shop,
-          distanceKm,
-        };
-      });
+        ),
+      }));
 
       withDistance.sort((a, b) => {
         if (a.distanceKm === null) return 1;
@@ -106,15 +100,31 @@ export default function Home() {
   }, [query]);
 
   return (
-    <main style={{ padding: 40, fontFamily: "Arial, sans-serif" }}>
-      <h1>LoclStor</h1>
-      <p>Find mobile phones & accessories near you</p>
+    <main
+      style={{
+        padding: 40,
+        fontFamily: "Arial, sans-serif",
+        maxWidth: 900,
+        margin: "0 auto",
+      }}
+    >
+      <h1 style={{ fontSize: 28 }}>LoclStor</h1>
+      <p style={{ opacity: 0.8 }}>
+        Find mobile phones & accessories near you
+      </p>
 
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search phone or accessory…"
-        style={{ width: "100%", padding: 12, fontSize: 16 }}
+        style={{
+          width: "100%",
+          padding: 14,
+          fontSize: 16,
+          borderRadius: 8,
+          border: "1px solid #333",
+          marginTop: 8,
+        }}
       />
 
       <div style={{ marginTop: 12 }}>
@@ -125,10 +135,12 @@ export default function Home() {
             onClick={() => setQuery(item)}
             style={{
               marginLeft: 8,
-              background: "none",
+              background: "#111",
               border: "1px solid #333",
-              padding: "4px 8px",
+              borderRadius: 6,
+              padding: "6px 10px",
               cursor: "pointer",
+              color: "#ddd",
             }}
           >
             {item}
@@ -136,11 +148,15 @@ export default function Home() {
         ))}
       </div>
 
-      {loading && <p>Searching…</p>}
+      {loading && (
+        <p style={{ marginTop: 16, opacity: 0.8 }}>
+          Finding nearby shops…
+        </p>
+      )}
 
       {!loading && query && results.length === 0 && (
         <p style={{ marginTop: 16, opacity: 0.8 }}>
-          No nearby shops sell “{query}” yet. Try another product.
+          No nearby shops sell “{query}”. Try “Samsung” or “AirPods”.
         </p>
       )}
 
@@ -150,57 +166,102 @@ export default function Home() {
         </p>
       )}
 
-      <ul>
-        {results.map((shop) => (
+      <ul style={{ padding: 0, listStyle: "none" }}>
+        {results.map((shop, index) => (
           <li
-  key={shop.id}
-  style={{
-    marginTop: 16,
-    padding: 14,
-    border: "1px solid #2a2a2a",
-    borderRadius: 10,
-    background: "#0b0b0b",
-  }}
->
-  <div style={{ display: "flex", justifyContent: "space-between" }}>
-    <strong style={{ fontSize: 16 }}>{shop.name}</strong>
+            key={shop.id}
+            style={{
+              marginTop: 16,
+              padding: 16,
+              borderRadius: 12,
+              background: "#0f0f0f",
+              border: "1px solid #262626",
+              boxShadow: "0 6px 20px rgba(0,0,0,0.35)",
+              transition: "transform 0.15s ease, box-shadow 0.15s ease",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div>
+                <strong style={{ fontSize: 17 }}>{shop.name}</strong>
+                {index === 0 && (
+                  <span
+                    style={{
+                      marginLeft: 8,
+                      fontSize: 11,
+                      background: "#14532d",
+                      color: "#4ade80",
+                      padding: "2px 6px",
+                      borderRadius: 999,
+                    }}
+                  >
+                    Nearest
+                  </span>
+                )}
+              </div>
 
-    {shop.distanceKm !== null && (
-      <span
-        style={{
-          fontSize: 12,
-          fontWeight: 600,
-          color: "#4ade80",
-        }}
-      >
-        📍 {shop.distanceKm.toFixed(1)} km
-      </span>
-    )}
-  </div>
+              {shop.distanceKm !== null && (
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#4ade80",
+                  }}
+                >
+                  📍 {shop.distanceKm.toFixed(1)} km
+                </span>
+              )}
+            </div>
 
-  <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>
-    {shop.area}
-  </div>
+            <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>
+              {shop.area}
+            </div>
 
-  <a
-    href={`tel:${shop.phone}`}
-    style={{
-      display: "inline-block",
-      marginTop: 6,
-      fontSize: 13,
-      color: "#60a5fa",
-      textDecoration: "none",
-      fontWeight: 500,
-    }}
-  >
-    📞 {shop.phone}
-  </a>
+            <a
+              href={`tel:${shop.phone}`}
+              style={{
+                display: "inline-block",
+                marginTop: 6,
+                fontSize: 13,
+                color: "#60a5fa",
+                textDecoration: "none",
+                fontWeight: 500,
+              }}
+            >
+              📞 {shop.phone}
+            </a>
 
-  <div style={{ marginTop: 8, fontSize: 13 }}>
-    <strong>Available:</strong> {shop.products.join(", ")}
-  </div>
-</li>
-
+            <div style={{ marginTop: 10 }}>
+              <strong style={{ fontSize: 13 }}>Available</strong>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  marginTop: 6,
+                }}
+              >
+                {shop.products.map((p, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      background: "#1f2933",
+                      padding: "4px 10px",
+                      borderRadius: 999,
+                      fontSize: 12,
+                    }}
+                  >
+                    {p}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </li>
         ))}
       </ul>
     </main>
