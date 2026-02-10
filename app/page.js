@@ -153,29 +153,54 @@ export default function Home() {
       <ul>
         {results.map((shop) => (
           <li
-            key={shop.id}
-            style={{
-              marginTop: 20,
-              padding: 12,
-              border: "1px solid #333",
-              borderRadius: 6,
-            }}
-          >
-            <strong>{shop.name}</strong> — {shop.area} — {shop.phone}
+  key={shop.id}
+  style={{
+    marginTop: 16,
+    padding: 14,
+    border: "1px solid #2a2a2a",
+    borderRadius: 10,
+    background: "#0b0b0b",
+  }}
+>
+  <div style={{ display: "flex", justifyContent: "space-between" }}>
+    <strong style={{ fontSize: 16 }}>{shop.name}</strong>
 
-            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
-             {shop.distanceKm !== null
-             ? `${shop.distanceKm.toFixed(1)} km away`
-              : "Distance unavailable"}
-              </div>
+    {shop.distanceKm !== null && (
+      <span
+        style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: "#4ade80",
+        }}
+      >
+        📍 {shop.distanceKm.toFixed(1)} km
+      </span>
+    )}
+  </div>
 
+  <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>
+    {shop.area}
+  </div>
 
-            <ul>
-              {shop.products.map((p, i) => (
-                <li key={i}>{p}</li>
-              ))}
-            </ul>
-          </li>
+  <a
+    href={`tel:${shop.phone}`}
+    style={{
+      display: "inline-block",
+      marginTop: 6,
+      fontSize: 13,
+      color: "#60a5fa",
+      textDecoration: "none",
+      fontWeight: 500,
+    }}
+  >
+    📞 {shop.phone}
+  </a>
+
+  <div style={{ marginTop: 8, fontSize: 13 }}>
+    <strong>Available:</strong> {shop.products.join(", ")}
+  </div>
+</li>
+
         ))}
       </ul>
     </main>
