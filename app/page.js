@@ -163,11 +163,12 @@ export default function Home() {
           >
             <strong>{shop.name}</strong> — {shop.area} — {shop.phone}
 
-            {shop.distanceKm !== null && (
-              <div style={{ fontSize: 12, opacity: 0.7 }}>
-                {shop.distanceKm.toFixed(1)} km away
+            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+             {shop.distanceKm !== null
+             ? `${shop.distanceKm.toFixed(1)} km away`
+              : "Distance unavailable"}
               </div>
-            )}
+
 
             <ul>
               {shop.products.map((p, i) => (
