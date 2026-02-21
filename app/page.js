@@ -1,44 +1,103 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { getCurrentPosition, getDefaultCoords } from "@/lib/geo";
+import { getDistanceKm } from "@/lib/utils";
+import SearchBar from "@/components/SearchBar";
+import ShopCard from "@/components/ShopCard";
+import SkeletonCard from "@/components/SkeletonCard";
+import EmptyState from "@/components/EmptyState";
+import ErrorState from "@/components/ErrorState";
 
-// Temporary user location (Andheri East – Marol)
-const USER_LAT = 19.1197;
-const USER_LNG = 72.8790;
+const DEBOUNCE_MS = 300;
 
-function getDistanceKm(lat1, lng1, lat2, lng2) {
-  if (!lat2 || !lng2) return null;
+function groupAndSortShops(data, userLat, userLng) {
+  const grouped = {};
+  data.forEach((item) => {
+    const shop = item.shops;
+    if (!shop) return;
+    if (!grouped[shop.id]) {
+      grouped[shop.id] = { ...shop, products: [] };
+    }
+    grouped[shop.id].products.push(item.product_name);
+  });
 
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const withDistance = Object.values(grouped).map((shop) => ({
+    ...shop,
+    distanceKm: getDistanceKm(userLat, userLng, shop.lat, shop.lng),
+  }));
 
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2;
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  withDistance.sort((a, b) => {
+    if (a.distanceKm === null) return 1;
+    if (b.distanceKm === null) return -1;
+    return a.distanceKm - b.distanceKm;
+  });
+  return withDistance;
 }
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const qFromUrl = searchParams.get("q") ?? "";
+
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [location, setLocation] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Sync URL -> state on mount and when URL changes (e.g. back button)
+  useEffect(() => {
+    setQuery(qFromUrl);
+  }, [qFromUrl]);
+
+  // Get user location once
+  useEffect(() => {
+    let cancelled = false;
+    setLocationLoading(true);
+    getCurrentPosition()
+      .then((coords) => {
+        if (!cancelled) {
+          setLocation(coords || getDefaultCoords());
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLocationLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const userLat = location?.lat ?? getDefaultCoords().lat;
+  const userLng = location?.lng ?? getDefaultCoords().lng;
+
+  const updateQuery = useCallback((newQuery) => {
+    setQuery(newQuery);
+    setError(false);
+    const url = new URL(window.location.href);
+    if (newQuery.trim()) {
+      url.searchParams.set("q", newQuery.trim());
+    } else {
+      url.searchParams.delete("q");
+    }
+    window.history.replaceState({}, "", url.toString());
+  }, []);
 
   useEffect(() => {
-    async function search() {
-      if (!query.trim()) {
-        setResults([]);
-        return;
-      }
+    if (!query.trim()) {
+      setResults([]);
+      setLoading(false);
+      return;
+    }
 
+    let cancelled = false;
+    const timer = setTimeout(async () => {
       setLoading(true);
+      setError(false);
 
-      const { data, error } = await supabase
+      const { data, error: err } = await supabase
         .from("products")
         .select(`
           product_name,
@@ -51,219 +110,81 @@ export default function Home() {
             lng
           )
         `)
-        .ilike("product_name", `%${query}%`);
+        .ilike("product_name", `%${query.trim()}%`);
 
-      if (error || !data) {
+      if (cancelled) return;
+
+      if (err) {
+        setError(true);
         setResults([]);
         setLoading(false);
         return;
       }
 
-      const grouped = {};
-
-      data.forEach((item) => {
-        const shop = item.shops;
-        if (!shop) return;
-
-        if (!grouped[shop.id]) {
-          grouped[shop.id] = {
-            ...shop,
-            products: [],
-          };
-        }
-
-        grouped[shop.id].products.push(item.product_name);
-      });
-
-      const withDistance = Object.values(grouped).map((shop) => ({
-        ...shop,
-        distanceKm: getDistanceKm(
-          USER_LAT,
-          USER_LNG,
-          shop.lat,
-          shop.lng
-        ),
-      }));
-
-      withDistance.sort((a, b) => {
-        if (a.distanceKm === null) return 1;
-        if (b.distanceKm === null) return -1;
-        return a.distanceKm - b.distanceKm;
-      });
-
-      setResults(withDistance);
+      const sorted = groupAndSortShops(data || [], userLat, userLng);
+      setResults(sorted);
       setLoading(false);
-    }
+    }, DEBOUNCE_MS);
 
-    const delay = setTimeout(search, 300);
-    return () => clearTimeout(delay);
-  }, [query]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query, userLat, userLng, retryCount]);
 
   return (
-    <main
-      style={{
-        padding: 40,
-        fontFamily: "Arial, sans-serif",
-        maxWidth: 900,
-        margin: "0 auto",
-      }}
-    >
-      <h1 style={{ fontSize: 28 }}>LoclStor</h1>
-      <p style={{ opacity: 0.8 }}>
-        Find mobile phones & accessories near you
-      </p>
+    <main className="container" style={{ paddingBlock: "var(--space-8) var(--space-12)" }}>
+      <header className="page-header">
+        <h1 className="page-title">LoclStor</h1>
+        <p className="page-desc">Find mobile phones & accessories near you</p>
+        {locationLoading && (
+          <p className="page-location-hint" aria-live="polite">Getting your location…</p>
+        )}
+        {!locationLoading && !location && (
+          <p className="page-location-hint">Using default area. Enable location for accurate distance.</p>
+        )}
+      </header>
 
-      <input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search phone or accessory…"
-        style={{
-          width: "100%",
-          padding: 14,
-          fontSize: 16,
-          borderRadius: 8,
-          border: "1px solid #333",
-          marginTop: 8,
-        }}
-      />
-
-      <div style={{ marginTop: 12 }}>
-        <strong>Popular searches:</strong>{" "}
-        {["iPhone", "Samsung", "AirPods", "Fast Charger"].map((item) => (
-          <button
-            key={item}
-            onClick={() => setQuery(item)}
-            style={{
-              marginLeft: 8,
-              background: "#111",
-              border: "1px solid #333",
-              borderRadius: 6,
-              padding: "6px 10px",
-              cursor: "pointer",
-              color: "#ddd",
-            }}
-          >
-            {item}
-          </button>
-        ))}
+      <div className="search-wrap">
+        <SearchBar value={query} onChange={updateQuery} />
       </div>
 
       {loading && (
-        <p style={{ marginTop: 16, opacity: 0.8 }}>
-          Finding nearby shops…
+        <p className="results-status" aria-live="polite">Finding nearby shops…</p>
+      )}
+      {!loading && query.trim() && results.length > 0 && (
+        <p className="results-status">
+          {results.length} shop{results.length !== 1 ? "s" : ""} found for “{query}”
         </p>
       )}
 
-      {!loading && query && results.length === 0 && (
-        <p style={{ marginTop: 16, opacity: 0.8 }}>
-          No nearby shops sell “{query}”. Try “Samsung” or “AirPods”.
-        </p>
+      {error && (
+        <div className="results-list">
+          <ErrorState onRetry={() => { setError(false); setRetryCount((c) => c + 1); }} />
+        </div>
       )}
 
-      {!loading && query && results.length > 0 && (
-        <p style={{ marginTop: 16, opacity: 0.8 }}>
-          {results.length} shop{results.length > 1 ? "s" : ""} found for “{query}”
-        </p>
+      {!error && loading && (
+        <ul className="results-list" aria-busy="true">
+          {[1, 2, 3].map((i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </ul>
       )}
 
-      <ul style={{ padding: 0, listStyle: "none" }}>
-        {results.map((shop, index) => (
-          <li
-            key={shop.id}
-            style={{
-              marginTop: 16,
-              padding: 16,
-              borderRadius: 12,
-              background: "#0f0f0f",
-              border: "1px solid #262626",
-              boxShadow: "0 6px 20px rgba(0,0,0,0.35)",
-              transition: "transform 0.15s ease, box-shadow 0.15s ease",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <div>
-                <strong style={{ fontSize: 17 }}>{shop.name}</strong>
-                {index === 0 && (
-                  <span
-                    style={{
-                      marginLeft: 8,
-                      fontSize: 11,
-                      background: "#14532d",
-                      color: "#4ade80",
-                      padding: "2px 6px",
-                      borderRadius: 999,
-                    }}
-                  >
-                    Nearest
-                  </span>
-                )}
-              </div>
+      {!error && !loading && query.trim() && results.length === 0 && (
+        <div className="results-list">
+          <EmptyState query={query} onTry={updateQuery} />
+        </div>
+      )}
 
-              {shop.distanceKm !== null && (
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: "#4ade80",
-                  }}
-                >
-                  📍 {shop.distanceKm.toFixed(1)} km
-                </span>
-              )}
-            </div>
-
-            <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>
-              {shop.area}
-            </div>
-
-            <a
-              href={`tel:${shop.phone}`}
-              style={{
-                display: "inline-block",
-                marginTop: 6,
-                fontSize: 13,
-                color: "#60a5fa",
-                textDecoration: "none",
-                fontWeight: 500,
-              }}
-            >
-              📞 {shop.phone}
-            </a>
-
-            <div style={{ marginTop: 10 }}>
-              <strong style={{ fontSize: 13 }}>Available</strong>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                  marginTop: 6,
-                }}
-              >
-                {shop.products.map((p, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      background: "#1f2933",
-                      padding: "4px 10px",
-                      borderRadius: 999,
-                      fontSize: 12,
-                    }}
-                  >
-                    {p}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+      {!error && !loading && results.length > 0 && (
+        <ul className="results-list">
+          {results.map((shop, index) => (
+            <ShopCard key={shop.id} shop={shop} index={index} query={query} />
+          ))}
+        </ul>
+      )}
     </main>
   );
 }
