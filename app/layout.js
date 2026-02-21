@@ -3,11 +3,11 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata = {
-  title: "LoclStor – Find phones & accessories near you",
-  description: "Search for mobile phones and accessories at local shops. See distance, call, or get directions.",
+  title: "LoclStor – Find anything from local shops near you",
+  description: "Search for products at local shops. Find what you need nearby—see distance, call, or get directions.",
   openGraph: {
-    title: "LoclStor – Find phones & accessories near you",
-    description: "Search for mobile phones and accessories at local shops. See distance, call, or get directions.",
+    title: "LoclStor – Find anything from local shops near you",
+    description: "Search for products at local shops. Find what you need nearby—see distance, call, or get directions.",
   },
 };
 

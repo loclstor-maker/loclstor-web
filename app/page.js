@@ -136,7 +136,7 @@ export default function Home() {
     <main className="container page-content" style={{ paddingBlock: "var(--space-10) var(--space-16)" }}>
       <header className="page-hero">
         <h1 className="page-title">Find it nearby</h1>
-        <p className="page-desc">Search for phones and accessories at local shops. See distance, call, or get directions.</p>
+        <p className="page-desc">Search for any product at local shops. Find what you need nearby—see distance, call, or get directions.</p>
         {locationLoading && (
           <span className="page-location-hint" aria-live="polite">Getting your location…</span>
         )}

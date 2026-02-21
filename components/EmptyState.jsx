@@ -1,7 +1,7 @@
 "use client";
 
 export default function EmptyState({ query, onTry }) {
-  const suggestions = ["Samsung", "AirPods", "Fast Charger"].filter((s) => s !== query);
+  const suggestions = ["Laptop", "Groceries", "Medicines", "iPhone"].filter((s) => s !== query);
   return (
     <div className="empty-state">
       <p className="empty-state-title">No shops found for “{query}”</p>
