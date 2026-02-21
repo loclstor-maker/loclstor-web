@@ -1,19 +1,24 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getCurrentPosition, getDefaultCoords } from "@/lib/geo";
 import { getDistanceKm } from "@/lib/utils";
 import SearchBar from "@/components/SearchBar";
+import FilterBar from "@/components/FilterBar";
 import ShopCard from "@/components/ShopCard";
 import SkeletonCard from "@/components/SkeletonCard";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
+import RecentSearches from "@/components/RecentSearches";
+import ShareSearch from "@/components/ShareSearch";
+import ResultsMap from "@/components/ResultsMap";
+import { getRecentSearches, addRecentSearch } from "@/lib/recentSearches";
 
 const DEBOUNCE_MS = 300;
 
-function groupAndSortShops(data, userLat, userLng) {
+function groupAndSortShops(data, userLat, userLng, sortBy = "nearest") {
   const grouped = {};
   data.forEach((item) => {
     const shop = item.shops;
@@ -29,11 +34,15 @@ function groupAndSortShops(data, userLat, userLng) {
     distanceKm: getDistanceKm(userLat, userLng, shop.lat, shop.lng),
   }));
 
-  withDistance.sort((a, b) => {
-    if (a.distanceKm === null) return 1;
-    if (b.distanceKm === null) return -1;
-    return a.distanceKm - b.distanceKm;
-  });
+  if (sortBy === "products") {
+    withDistance.sort((a, b) => (b.products?.length ?? 0) - (a.products?.length ?? 0));
+  } else {
+    withDistance.sort((a, b) => {
+      if (a.distanceKm === null) return 1;
+      if (b.distanceKm === null) return -1;
+      return a.distanceKm - b.distanceKm;
+    });
+  }
   return withDistance;
 }
 
@@ -48,11 +57,21 @@ export default function Home() {
   const [location, setLocation] = useState(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [within, setWithin] = useState("");
+  const [sortBy, setSortBy] = useState("nearest");
+  const [recentSearches, setRecentSearches] = useState([]);
+  const [viewMode, setViewMode] = useState("list");
 
-  // Sync URL -> state on mount and when URL changes (e.g. back button)
+  // Sync URL -> state on mount and when URL changes
   useEffect(() => {
-    setQuery(qFromUrl);
-  }, [qFromUrl]);
+    setQuery(qFromUrl ?? "");
+    setWithin(searchParams.get("within") ?? "");
+    setSortBy(searchParams.get("sort") || "nearest");
+  }, [qFromUrl, searchParams]);
+
+  useEffect(() => {
+    setRecentSearches(getRecentSearches());
+  }, []);
 
   // Get user location once
   useEffect(() => {
@@ -73,15 +92,31 @@ export default function Home() {
   const userLat = location?.lat ?? getDefaultCoords().lat;
   const userLng = location?.lng ?? getDefaultCoords().lng;
 
+  // Apply distance filter and use filtered count for display
+  const filteredResults = useMemo(() => {
+    if (!within) return results;
+    const km = Number(within);
+    if (!km) return results;
+    return results.filter((shop) => shop.distanceKm != null && shop.distanceKm <= km);
+  }, [results, within]);
+
   const updateQuery = useCallback((newQuery) => {
     setQuery(newQuery);
     setError(false);
     const url = new URL(window.location.href);
-    if (newQuery.trim()) {
-      url.searchParams.set("q", newQuery.trim());
-    } else {
-      url.searchParams.delete("q");
-    }
+    if (newQuery.trim()) url.searchParams.set("q", newQuery.trim());
+    else url.searchParams.delete("q");
+    window.history.replaceState({}, "", url.toString());
+  }, []);
+
+  const updateFilters = useCallback((newWithin, newSort) => {
+    setWithin(newWithin);
+    setSortBy(newSort);
+    const url = new URL(window.location.href);
+    if (newWithin) url.searchParams.set("within", newWithin);
+    else url.searchParams.delete("within");
+    if (newSort && newSort !== "nearest") url.searchParams.set("sort", newSort);
+    else url.searchParams.delete("sort");
     window.history.replaceState({}, "", url.toString());
   }, []);
 
@@ -121,8 +156,12 @@ export default function Home() {
         return;
       }
 
-      const sorted = groupAndSortShops(data || [], userLat, userLng);
+      const sorted = groupAndSortShops(data || [], userLat, userLng, sortBy);
       setResults(sorted);
+      if (query.trim()) {
+        addRecentSearch(query.trim());
+        setRecentSearches(getRecentSearches());
+      }
       setLoading(false);
     }, DEBOUNCE_MS);
 
@@ -130,7 +169,7 @@ export default function Home() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [query, userLat, userLng, retryCount]);
+  }, [query, userLat, userLng, retryCount, sortBy]);
 
   return (
     <main className="container page-content" style={{ paddingBlock: "var(--space-10) var(--space-16)" }}>
@@ -147,15 +186,56 @@ export default function Home() {
 
       <div className="search-wrap">
         <SearchBar value={query} onChange={updateQuery} />
+        <RecentSearches items={recentSearches} onSelect={updateQuery} />
       </div>
+
+      {!loading && query.trim() && results.length > 0 && (
+        <FilterBar
+          within={within}
+          sort={sortBy}
+          onWithinChange={(v) => updateFilters(v, sortBy)}
+          onSortChange={(v) => updateFilters(within, v)}
+        />
+      )}
 
       {loading && (
         <p className="results-status" aria-live="polite">Finding nearby shops…</p>
       )}
       {!loading && query.trim() && results.length > 0 && (
-        <p className="results-status">
-          {results.length} shop{results.length !== 1 ? "s" : ""} found for “{query}”
-        </p>
+        <div className="results-status-row">
+          <p className="results-status">
+            {filteredResults.length} shop{filteredResults.length !== 1 ? "s" : ""} found for “{query}”
+          {within && filteredResults.length !== results.length && ` (${results.length} total)`}
+          </p>
+          <ShareSearch />
+        </div>
+      )}
+
+      {!error && !loading && filteredResults.length > 0 && (
+        <div className="view-toggle">
+          <button
+            type="button"
+            className={`view-toggle-btn ${viewMode === "list" ? "active" : ""}`}
+            onClick={() => setViewMode("list")}
+          >
+            List
+          </button>
+          <button
+            type="button"
+            className={`view-toggle-btn ${viewMode === "map" ? "active" : ""}`}
+            onClick={() => setViewMode("map")}
+          >
+            Map
+          </button>
+        </div>
+      )}
+
+      {!error && !loading && filteredResults.length > 0 && viewMode === "map" && (
+        <ResultsMap
+          shops={filteredResults}
+          centerLat={userLat}
+          centerLng={userLng}
+        />
       )}
 
       {error && (
@@ -178,13 +258,34 @@ export default function Home() {
         </div>
       )}
 
-      {!error && !loading && results.length > 0 && (
+      {!error && !loading && query.trim() && results.length > 0 && filteredResults.length === 0 && (
+        <div className="results-list">
+          <div className="empty-state">
+            <p className="empty-state-title">No shops within {within} km</p>
+            <p className="empty-state-desc">Try a wider distance or a different search.</p>
+            <button type="button" onClick={() => updateFilters("", sortBy)} className="empty-state-chip" style={{ marginTop: "var(--space-4)" }}>
+              Show all {results.length} shops
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!error && !loading && filteredResults.length > 0 && viewMode === "list" && (
         <ul className="results-list">
-          {results.map((shop, index) => (
+          {filteredResults.map((shop, index) => (
             <ShopCard key={shop.id} shop={shop} index={index} query={query} />
           ))}
         </ul>
       )}
+
+      <section id="how-it-works" className="page-section">
+        <h2 className="page-section-title">How it works</h2>
+        <p className="page-section-text">Search for any product. We show you local shops that have it, sorted by distance. Call them or open in Maps to get directions.</p>
+      </section>
+      <section id="about" className="page-section">
+        <h2 className="page-section-title">About LoclStor</h2>
+        <p className="page-section-text">LoclStor helps you find products at nearby local shops. One search, multiple options—call or visit with a single tap.</p>
+      </section>
     </main>
   );
 }

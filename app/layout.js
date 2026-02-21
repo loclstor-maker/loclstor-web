@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import Footer from "@/components/Footer";
 import "./globals.css";
 
 export const metadata = {
@@ -50,11 +51,14 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>
+      <body className="layout-body">
         <Header />
-        <Suspense fallback={<LoadingFallback />}>
-          {children}
-        </Suspense>
+        <main className="layout-main">
+          <Suspense fallback={<LoadingFallback />}>
+            {children}
+          </Suspense>
+        </main>
+        <Footer />
       </body>
     </html>
   );
