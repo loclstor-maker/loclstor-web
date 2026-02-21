@@ -23,18 +23,36 @@ function Header() {
         <Link href="/" className="site-logo">
           LoclStor
         </Link>
-        <p className="site-tagline">Local marketplace search</p>
+        <span className="site-tagline">Local marketplace search</span>
       </div>
     </header>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="container page-loading">
+      <div className="skeleton" style={{ width: "40%", height: "1.5rem", borderRadius: 8 }} />
+      <div className="skeleton" style={{ width: "60%", height: "1rem", marginTop: 12, borderRadius: 8 }} />
+      <div className="skeleton" style={{ width: "100%", height: "3rem", marginTop: 24, borderRadius: 16 }} />
+    </div>
   );
 }
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>
         <Header />
-        <Suspense fallback={<div className="container" style={{ paddingBlock: "2rem", color: "var(--text-muted)" }}>Loading…</div>}>
+        <Suspense fallback={<LoadingFallback />}>
           {children}
         </Suspense>
       </body>

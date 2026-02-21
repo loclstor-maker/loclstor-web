@@ -133,15 +133,15 @@ export default function Home() {
   }, [query, userLat, userLng, retryCount]);
 
   return (
-    <main className="container" style={{ paddingBlock: "var(--space-8) var(--space-12)" }}>
-      <header className="page-header">
-        <h1 className="page-title">LoclStor</h1>
-        <p className="page-desc">Find mobile phones & accessories near you</p>
+    <main className="container page-content" style={{ paddingBlock: "var(--space-10) var(--space-16)" }}>
+      <header className="page-hero">
+        <h1 className="page-title">Find it nearby</h1>
+        <p className="page-desc">Search for phones and accessories at local shops. See distance, call, or get directions.</p>
         {locationLoading && (
-          <p className="page-location-hint" aria-live="polite">Getting your location…</p>
+          <span className="page-location-hint" aria-live="polite">Getting your location…</span>
         )}
         {!locationLoading && !location && (
-          <p className="page-location-hint">Using default area. Enable location for accurate distance.</p>
+          <span className="page-location-hint">Using default area. Enable location for accurate distance.</span>
         )}
       </header>
 
