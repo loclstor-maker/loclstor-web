@@ -26,7 +26,12 @@ function Header() {
         <Link href="/" className="site-logo">
           LoclStor
         </Link>
-        <span className="site-tagline">Local marketplace search</span>
+        <div className="site-header-right">
+          <span className="site-tagline">Local marketplace search</span>
+          <Link href="/add-shop" className="add-shop-btn">
+            + Add shop
+          </Link>
+        </div>
       </div>
     </header>
   );

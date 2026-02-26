@@ -15,6 +15,7 @@ export default function Footer() {
         <nav className="site-footer-nav" aria-label="Footer">
           <Link href="/#how-it-works" className="site-footer-link">How it works</Link>
           <Link href="/#about" className="site-footer-link">About</Link>
+          <Link href="/add-shop" className="site-footer-link">List your shop</Link>
           <Link href="/contact" className="site-footer-link">Contact</Link>
           <Link href="/support" className="site-footer-link">Support</Link>
         </nav>
