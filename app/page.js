@@ -76,6 +76,22 @@ export default function Home() {
     nothing: "Nothing",
   };
 
+  const heroCategories = [
+    { label: "Flagship phones", query: "iPhone 15 Pro", emoji: "⭐" },
+    { label: "Budget under ₹20k", query: "under 20000", emoji: "💸" },
+    { label: "Best camera", query: "camera phone", emoji: "📷" },
+    { label: "5G phones", query: "5G", emoji: "5G" },
+    { label: "Accessories", query: "charger", emoji: "🔌" },
+  ];
+
+  const trendingSearches = [
+    "iPhone 15",
+    "Samsung Galaxy S series",
+    "OnePlus Nord",
+    "Pixel 8",
+    "Fast charger",
+  ];
+
   // Sync URL -> state on mount and when URL changes
   useEffect(() => {
     setQuery(qFromUrl ?? "");
@@ -237,6 +253,20 @@ export default function Home() {
           <span className="page-location-hint">Using default area. Enable location for accurate distance.</span>
         )}
       </header>
+
+      <section className="hero-categories" aria-label="Browse smartphone types">
+        {heroCategories.map((item) => (
+          <button
+            key={item.label}
+            type="button"
+            className="hero-category-card"
+            onClick={() => updateQuery(item.query)}
+          >
+            <span className="hero-category-emoji">{item.emoji}</span>
+            <span className="hero-category-label">{item.label}</span>
+          </button>
+        ))}
+      </section>
 
       <div className="search-wrap">
         <SearchBar value={query} onChange={updateQuery} />
