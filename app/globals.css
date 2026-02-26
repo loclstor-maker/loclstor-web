@@ -647,31 +647,16 @@ a:hover {
 }
 
 /* ===== Filter bar ===== */
-.filters-wrap {
-  position: static;
-}
-
-@media (min-width: 900px) {
-  .filters-wrap {
-    position: sticky;
-    top: var(--space-4);
-    z-index: 5;
-    padding-block: var(--space-1);
-    background: linear-gradient(
-      to bottom,
-      rgba(8, 10, 12, 0.96),
-      rgba(8, 10, 12, 0.94)
-    );
-    backdrop-filter: blur(6px);
-  }
-}
-
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
   margin-bottom: var(--space-5);
+  border-radius: var(--radius-xl);
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid var(--border-subtle);
 }
 
 .filter-group {
@@ -689,18 +674,21 @@ a:hover {
 .filter-select {
   font-size: var(--text-sm);
   font-family: var(--font-sans);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-4);
   color: var(--text-primary);
-  background: var(--bg-input);
+  background: transparent;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   cursor: pointer;
-  transition: border-color var(--transition-fast);
+  min-width: 7rem;
+  transition: border-color var(--transition-fast), background var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .filter-select:hover,
 .filter-select:focus {
   border-color: var(--color-primary);
+  background: var(--bg-card-hover);
   outline: none;
 }
 
@@ -731,6 +719,12 @@ a:hover {
   align-items: center;
   gap: var(--space-3);
   margin-bottom: var(--space-5);
+}
+
+@media (min-width: 768px) {
+  .results-status-row {
+    justify-content: space-between;
+  }
 }
 
 .results-status {
