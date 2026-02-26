@@ -8,7 +8,9 @@ export default function Footer() {
       <div className="container site-footer-inner">
         <div className="site-footer-brand">
           <Link href="/" className="site-footer-logo">LoclStor</Link>
-          <p className="site-footer-tagline">Find anything from local shops near you.</p>
+          <p className="site-footer-tagline">
+            Find smartphones from local shops near you.
+          </p>
         </div>
         <nav className="site-footer-nav" aria-label="Footer">
           <Link href="/#how-it-works" className="site-footer-link">How it works</Link>

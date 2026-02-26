@@ -175,7 +175,10 @@ export default function Home() {
     <main className="container page-content" style={{ paddingBlock: "var(--space-10) var(--space-16)" }}>
       <header className="page-hero">
         <h1 className="page-title">Find it nearby</h1>
-        <p className="page-desc">Search for any product at local shops. Find what you need nearby—see distance, call, or get directions.</p>
+        <p className="page-desc">
+          Search for smartphones at local shops. Find phones near you—see
+          distance, call, or get directions.
+        </p>
         {locationLoading && (
           <span className="page-location-hint" aria-live="polite">Getting your location…</span>
         )}
@@ -280,11 +283,17 @@ export default function Home() {
 
       <section id="how-it-works" className="page-section">
         <h2 className="page-section-title">How it works</h2>
-        <p className="page-section-text">Search for any product. We show you local shops that have it, sorted by distance. Call them or open in Maps to get directions.</p>
+        <p className="page-section-text">
+          Search for a smartphone. We show you local shops that have it, sorted
+          by distance. Call them or open in Maps to get directions.
+        </p>
       </section>
       <section id="about" className="page-section">
         <h2 className="page-section-title">About LoclStor</h2>
-        <p className="page-section-text">LoclStor helps you find products at nearby local shops. One search, multiple options—call or visit with a single tap.</p>
+        <p className="page-section-text">
+          LoclStor helps you find smartphones at nearby local shops. One search,
+          multiple options—call or visit with a single tap.
+        </p>
       </section>
     </main>
   );

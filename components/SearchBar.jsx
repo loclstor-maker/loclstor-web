@@ -1,6 +1,12 @@
 "use client";
 
-const POPULAR = ["iPhone", "Laptop", "Groceries", "Fast Charger", "Medicines"];
+const POPULAR = [
+  "iPhone 15",
+  "Samsung Galaxy",
+  "OnePlus",
+  "Pixel",
+  "Fast charger",
+];
 
 function SearchIcon() {
   return (
@@ -11,11 +17,16 @@ function SearchIcon() {
   );
 }
 
-export default function SearchBar({ value, onChange, placeholder = "Search for any product…", id = "search" }) {
+export default function SearchBar({
+  value,
+  onChange,
+  placeholder = "Search smartphones…",
+  id = "search",
+}) {
   return (
     <div className="search-bar">
       <label htmlFor={id} className="sr-only">
-        Search for products
+        Search for smartphones
       </label>
       <div className="search-input-wrap">
         <SearchIcon />

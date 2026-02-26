@@ -2,13 +2,14 @@ import Link from "next/link";
 
 export const metadata = {
   title: "Support – LoclStor",
-  description: "FAQs and help for using LoclStor to find products at local shops.",
+  description:
+    "FAQs and help for using LoclStor to find smartphones at local shops.",
 };
 
 const FAQ = [
   {
-    q: "How do I search for a product?",
-    a: "Type the product name in the search box on the home page. We’ll show you local shops that have it, sorted by distance. You can also use the popular search chips or your recent searches.",
+    q: "How do I search for a phone?",
+    a: "Type the smartphone name (for example “iPhone 15” or “Samsung Galaxy”) in the search box on the home page. We’ll show you local shops that have it, sorted by distance. You can also use the popular search chips or your recent searches.",
   },
   {
     q: "How is distance calculated?",

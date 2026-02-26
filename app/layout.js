@@ -4,11 +4,13 @@ import Footer from "@/components/Footer";
 import "./globals.css";
 
 export const metadata = {
-  title: "LoclStor – Find anything from local shops near you",
-  description: "Search for products at local shops. Find what you need nearby—see distance, call, or get directions.",
+  title: "LoclStor – Find smartphones from local shops near you",
+  description:
+    "Search for smartphones at local shops. Find phones near you—see distance, call, or get directions.",
   openGraph: {
-    title: "LoclStor – Find anything from local shops near you",
-    description: "Search for products at local shops. Find what you need nearby—see distance, call, or get directions.",
+    title: "LoclStor – Find smartphones from local shops near you",
+    description:
+      "Search for smartphones at local shops. Find phones near you—see distance, call, or get directions.",
   },
 };
 
