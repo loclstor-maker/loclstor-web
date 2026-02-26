@@ -697,8 +697,8 @@ a:hover {
   padding: var(--space-3) var(--space-4);
   margin-bottom: var(--space-5);
   border-radius: var(--radius-xl);
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid var(--border-subtle);
+  background: #f9fafb;
+  border: 1px solid rgba(148, 163, 184, 0.4);
 }
 
 .filter-group {
@@ -710,7 +710,7 @@ a:hover {
 .filter-label {
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
-  color: var(--text-secondary);
+  color: #6b7280;
 }
 
 .filter-select {
