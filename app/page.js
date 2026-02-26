@@ -59,14 +59,30 @@ export default function Home() {
   const [retryCount, setRetryCount] = useState(0);
   const [within, setWithin] = useState("");
   const [sortBy, setSortBy] = useState("nearest");
+  const [brand, setBrand] = useState("");
+  const [only5g, setOnly5g] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
   const [viewMode, setViewMode] = useState("list");
+
+  const brandLabelMap = {
+    apple: "Apple",
+    samsung: "Samsung",
+    oneplus: "OnePlus",
+    pixel: "Pixel",
+    xiaomi: "Xiaomi / Redmi",
+    realme: "realme",
+    vivo: "vivo",
+    oppo: "OPPO",
+    nothing: "Nothing",
+  };
 
   // Sync URL -> state on mount and when URL changes
   useEffect(() => {
     setQuery(qFromUrl ?? "");
     setWithin(searchParams.get("within") ?? "");
     setSortBy(searchParams.get("sort") || "nearest");
+    setBrand(searchParams.get("brand") || "");
+    setOnly5g(searchParams.get("fiveg") === "1");
   }, [qFromUrl, searchParams]);
 
   useEffect(() => {
@@ -92,13 +108,38 @@ export default function Home() {
   const userLat = location?.lat ?? getDefaultCoords().lat;
   const userLng = location?.lng ?? getDefaultCoords().lng;
 
-  // Apply distance filter and use filtered count for display
+  // Apply distance, brand, and 5G filters and use filtered count for display
   const filteredResults = useMemo(() => {
-    if (!within) return results;
-    const km = Number(within);
-    if (!km) return results;
-    return results.filter((shop) => shop.distanceKm != null && shop.distanceKm <= km);
-  }, [results, within]);
+    let list = results;
+
+    if (within) {
+      const km = Number(within);
+      if (km) {
+        list = list.filter(
+          (shop) => shop.distanceKm != null && shop.distanceKm <= km,
+        );
+      }
+    }
+
+    if (brand) {
+      const b = brand.toLowerCase();
+      list = list.filter((shop) =>
+        (shop.products || []).some((name) =>
+          name.toLowerCase().includes(b),
+        ),
+      );
+    }
+
+    if (only5g) {
+      list = list.filter((shop) =>
+        (shop.products || []).some((name) =>
+          name.toLowerCase().includes("5g"),
+        ),
+      );
+    }
+
+    return list;
+  }, [results, within, brand, only5g]);
 
   const updateQuery = useCallback((newQuery) => {
     setQuery(newQuery);
@@ -109,16 +150,26 @@ export default function Home() {
     window.history.replaceState({}, "", url.toString());
   }, []);
 
-  const updateFilters = useCallback((newWithin, newSort) => {
-    setWithin(newWithin);
-    setSortBy(newSort);
-    const url = new URL(window.location.href);
-    if (newWithin) url.searchParams.set("within", newWithin);
-    else url.searchParams.delete("within");
-    if (newSort && newSort !== "nearest") url.searchParams.set("sort", newSort);
-    else url.searchParams.delete("sort");
-    window.history.replaceState({}, "", url.toString());
-  }, []);
+  const syncFiltersToUrl = useCallback(
+    (nextWithin, nextSort, nextBrand, nextOnly5g) => {
+      const url = new URL(window.location.href);
+
+      if (nextWithin) url.searchParams.set("within", nextWithin);
+      else url.searchParams.delete("within");
+
+      if (nextSort && nextSort !== "nearest") url.searchParams.set("sort", nextSort);
+      else url.searchParams.delete("sort");
+
+      if (nextBrand) url.searchParams.set("brand", nextBrand);
+      else url.searchParams.delete("brand");
+
+      if (nextOnly5g) url.searchParams.set("fiveg", "1");
+      else url.searchParams.delete("fiveg");
+
+      window.history.replaceState({}, "", url.toString());
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!query.trim()) {
@@ -193,12 +244,30 @@ export default function Home() {
       </div>
 
       {!loading && query.trim() && results.length > 0 && (
-        <FilterBar
-          within={within}
-          sort={sortBy}
-          onWithinChange={(v) => updateFilters(v, sortBy)}
-          onSortChange={(v) => updateFilters(within, v)}
-        />
+        <div className="filters-wrap">
+          <FilterBar
+            within={within}
+            sort={sortBy}
+            brand={brand}
+            only5g={only5g}
+            onWithinChange={(v) => {
+              setWithin(v);
+              syncFiltersToUrl(v, sortBy, brand, only5g);
+            }}
+            onSortChange={(v) => {
+              setSortBy(v);
+              syncFiltersToUrl(within, v, brand, only5g);
+            }}
+            onBrandChange={(v) => {
+              setBrand(v);
+              syncFiltersToUrl(within, sortBy, v, only5g);
+            }}
+            onOnly5gChange={(checked) => {
+              setOnly5g(checked);
+              syncFiltersToUrl(within, sortBy, brand, checked);
+            }}
+          />
+        </div>
       )}
 
       {loading && (
@@ -208,8 +277,27 @@ export default function Home() {
         <div className="results-status-row">
           <p className="results-status">
             {filteredResults.length} shop{filteredResults.length !== 1 ? "s" : ""} found for “{query}”
-          {within && filteredResults.length !== results.length && ` (${results.length} total)`}
+            {within && filteredResults.length !== results.length && ` (${results.length} total)`}
           </p>
+
+          <div className="results-filter-chips">
+            {within && (
+              <span className="results-filter-chip">
+                Within {within} km
+              </span>
+            )}
+            {brand && (
+              <span className="results-filter-chip">
+                Brand: {brandLabelMap[brand] || brand}
+              </span>
+            )}
+            {only5g && (
+              <span className="results-filter-chip">
+                5G only
+              </span>
+            )}
+          </div>
+
           <ShareSearch />
         </div>
       )}
@@ -266,7 +354,15 @@ export default function Home() {
           <div className="empty-state">
             <p className="empty-state-title">No shops within {within} km</p>
             <p className="empty-state-desc">Try a wider distance or a different search.</p>
-            <button type="button" onClick={() => updateFilters("", sortBy)} className="empty-state-chip" style={{ marginTop: "var(--space-4)" }}>
+            <button
+              type="button"
+              onClick={() => {
+                setWithin("");
+                syncFiltersToUrl("", sortBy, brand, only5g);
+              }}
+              className="empty-state-chip"
+              style={{ marginTop: "var(--space-4)" }}
+            >
               Show all {results.length} shops
             </button>
           </div>

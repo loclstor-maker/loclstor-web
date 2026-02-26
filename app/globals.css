@@ -379,6 +379,33 @@ a:hover {
   margin-top: var(--space-2);
 }
 
+.shop-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.shop-meta-chip {
+  font-size: var(--text-xs);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card-hover);
+  color: var(--text-secondary);
+}
+
+.shop-meta-chip-brand {
+  font-weight: var(--font-medium);
+}
+
+.shop-meta-chip-5g {
+  border-color: var(--success);
+  background: var(--success-muted);
+  color: var(--success);
+  font-weight: var(--font-semibold);
+}
+
 .shop-card-actions {
   display: flex;
   flex-wrap: wrap;
@@ -620,6 +647,25 @@ a:hover {
 }
 
 /* ===== Filter bar ===== */
+.filters-wrap {
+  position: static;
+}
+
+@media (min-width: 900px) {
+  .filters-wrap {
+    position: sticky;
+    top: var(--space-4);
+    z-index: 5;
+    padding-block: var(--space-1);
+    background: linear-gradient(
+      to bottom,
+      rgba(8, 10, 12, 0.96),
+      rgba(8, 10, 12, 0.94)
+    );
+    backdrop-filter: blur(6px);
+  }
+}
+
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -691,6 +737,21 @@ a:hover {
   font-size: var(--text-sm);
   color: var(--text-secondary);
   margin: 0;
+}
+
+.results-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.results-filter-chip {
+  font-size: var(--text-xs);
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card-hover);
+  color: var(--text-secondary);
 }
 
 .results-list {

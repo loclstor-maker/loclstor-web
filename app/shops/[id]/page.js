@@ -6,6 +6,36 @@ import { useParams, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { mapsUrl } from "@/lib/utils";
 
+const BRAND_KEYWORDS = [
+  { key: "apple", label: "Apple" },
+  { key: "iphone", label: "Apple" },
+  { key: "samsung", label: "Samsung" },
+  { key: "oneplus", label: "OnePlus" },
+  { key: "pixel", label: "Pixel" },
+  { key: "xiaomi", label: "Xiaomi" },
+  { key: "redmi", label: "Xiaomi" },
+  { key: "realme", label: "realme" },
+  { key: "vivo", label: "vivo" },
+  { key: "oppo", label: "OPPO" },
+  { key: "nothing", label: "Nothing" },
+];
+
+function getMetaFromProducts(products = []) {
+  const lower = products.map((p) => (p.product_name || "").toLowerCase());
+
+  const brandSet = new Set();
+  lower.forEach((name) => {
+    BRAND_KEYWORDS.forEach(({ key, label }) => {
+      if (name.includes(key)) brandSet.add(label);
+    });
+  });
+
+  const brands = Array.from(brandSet);
+  const has5g = lower.some((name) => name.includes("5g"));
+
+  return { brands, has5g };
+}
+
 export default function ShopPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -82,6 +112,7 @@ export default function ShopPage() {
 
   const mapsLink = mapsUrl(shop.lat, shop.lng, shop.name);
   const backHref = backQuery ? `/?q=${encodeURIComponent(backQuery)}` : "/";
+  const { brands, has5g } = getMetaFromProducts(products);
 
   return (
     <main className="container shop-page">
@@ -95,6 +126,17 @@ export default function ShopPage() {
         <h1 className="shop-page-title">{shop.name}</h1>
         <p className="shop-page-area">{shop.area}</p>
       </header>
+
+      {(brands.length > 0 || has5g) && (
+        <div className="shop-meta-row" style={{ marginBottom: "var(--space-4)" }}>
+          {brands.length > 0 && (
+            <span className="shop-meta-chip shop-meta-chip-brand">
+              {brands.join(" • ")}
+            </span>
+          )}
+          {has5g && <span className="shop-meta-chip shop-meta-chip-5g">5G</span>}
+        </div>
+      )}
 
       <div className="shop-page-actions">
         <a href={`tel:${shop.phone}`} className="shop-page-btn shop-page-btn-primary">
